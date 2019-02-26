@@ -1,3 +1,3 @@
-# get baseball data from yahoo
+# get baseball data (NPB data) from yahoo
 
 by web scraping
