@@ -7,68 +7,91 @@ import pickle
 PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
 # 試合日
+# game date
+# format: YYYYMMDDNN
+# N means game number in day. should set 01 to 06
 gameDate = "2019022406" # 試合の日付とその日の何試合目か
 
 # 保存するSQLite DB
+# sqlite3 database name
 saveDBName = "baseballResult.db"
 
 # アドレス解析用
+# URL parameter
 r = re.compile("inn=([0-9]+)&tb=([0-9]+)&bat=([0-9]+)")
 
 # 基準となるアドレス
+# base URL(yahoo japan baseball page)
 url = "https://baseball.yahoo.co.jp/live/npb/game/"
 
-inn = 1 # イニング
-tb = 1  # 表裏
-bat = 1 # 何人目のバッターか
+inn = 1 # イニング inning
+tb = 1  # 表裏 top or bottom
+bat = 1 # 何人目のバッターか batters in inning
 
 # 取得アドレス構築
+# set up fetch url
 getUrl = url+str(gameDate)+"/score?inn="+str(inn)+"&tb="+str(tb)+"&bat="+str(bat)
 
 # 結果を格納する辞書オブジェクト
+# save result data in dictionary
 ballHistory = {}
 # 最初に取得するデータを初期化
+# init first data
 ballHistory[str(inn)+"_"+str(tb)+"_"+str(bat)] = []
 
 # SQLite接続
+# connect sqlite database
 conn = sqlite3.connect(saveDBName)
 c = conn.cursor()
 
 # すべての打者に対してループ実行
+# loop operation for all batters
 while True:
     # アドレスからイニングと表裏、何人目のバッターか抽出
+    # get parameter, inning, top or bottom, batters in inning
     m = r.search(getUrl)
     inn, tb, bat = m.group(1), m.group(2), m.group(3)
     # デバッグ用に表示
+    # for debug print
     print(m.group(1), m.group(2), m.group(3))
-    # 取得するアドレス
+    # 取得するアドレスにアクセス
+    # fetch data
     baseballPage = requests.get(getUrl)
     # BeautifulSoupで取得
+    # parse with beautiful soup
     soup = BeautifulSoup(baseballPage.text, "html.parser")
     # 投球データ取得
+    # get pitch data
     baseballIning = soup.select("#livedetail > #column-center  .mb20p tr td")
     ballHistory[str(inn)+"_"+str(tb)+"_"+str(bat)] = []
 
     # 投球コースを処理
+    # get pitch area
     kindOfBall = soup.select("#kdL td")
     
     # 投球データを保存する辞書オブジェクト
+    # save pitch data in dictionary
     kindOfBallJson = {}
 
     # 投球データ
+    # get pitch data
     kindOfBall = soup.select(".kyusyu-mark td")
     j = 1
     
     # 投球数の分だけ繰り返す
+    # iterate each pitch
     for eachBall in kindOfBall:
         if eachBall.text != "":
             # 球数を保存
+            # save pitch number
             ballNum = eachBall.text.count("\n")
             # 1球以下なら保存して終わり
+            # if only one pitch, save and finish
             if ballNum <= 1:
                 kindOfBallJson[eachBall.text[1:].strip()] = j
                 pass
             # 複数球あれば都度保存
+            # save data for each pitch
             else:
                 tempBall = eachBall.text.split("\n")
                 for i in range(ballNum):
@@ -79,25 +102,26 @@ while True:
     eachBallDict = {}
 
     # 投球詳細データを処理
+    # scraping pitch detail data
     for eachBall in baseballIning:
-        if i%6 == 0: # 球種と打者への球数
+        if i%6 == 0: # 球種と打者への球数 save data, ball, pitch for batter, pitch area
             eachBallDict["kind"] = eachBall.text[:1]
             eachBallDict["ballForBatter"] = eachBall.text[1:]
             eachBallDict["course"] = kindOfBallJson[str(eachBallDict["ballForBatter"])]
             i+=1
-        elif i%6 == 1: # 投手の投げた球数
+        elif i%6 == 1: # 投手の投げた球数 balls in game
             eachBallDict["totalBall"] = eachBall.text
             i+=1
-        elif i%6 == 2: # 球種
+        elif i%6 == 2: # 球種 kind of pitch e.g. fast, slider etc.
             eachBallDict["ballName"] = eachBall.text
             i+=1
-        elif i%6 == 3: # 球速
+        elif i%6 == 3: # 球速 speed of ball
             eachBallDict["speed"] = eachBall.text
             i+=1
-        elif i%6 == 4: # 結果
+        elif i%6 == 4: # 結果 result
             eachBallDict["result"] = eachBall.text
             i+=1
-        elif i%6 == 5: # BSOカウント
+        elif i%6 == 5: # BSOカウント the count
             countText = eachBall.text.split()
             eachBallDict["B"] = countText[0]
             eachBallDict["S"] = countText[1]
@@ -109,73 +133,90 @@ while True:
             i+=1
 
     # 次へボタンを取得
+    # get next button element
     isNextButton = soup.find(id="btn_next")
     
     # 次へボタンが無ければ終了
+    # finish if last page
     if not isNextButton.has_attr("href"):
         break
 
     # 次に取得するアドレス
+    # next URL
     nextUrl = isNextButton["href"]
     print(nextUrl)
     
     # アドレスが無ければ終了
+    # finish if last page
     if nextUrl == "":
         break
     else:
         getUrl = nextUrl
 
     # 1秒待つ
+    # wait 1 sec.
     time.sleep(1)
 
 # 取得したオブジェクトを表示
+# print result object
 print(ballHistory)
 
 # 以下、試合の全体的なデータを取得
+# below, get meta data 
 
 # アドレス
+# fetch URL
 baseballPage = requests.get(getUrl)
 soup = BeautifulSoup(baseballPage.text, "html.parser")
 # スコアデータ取得
+# get score
 scoreboard = soup.select("#scoreboard > table > tbody > tr")
 metaData = {}
 metaData['date'] = gameDate
 
 # 各チームのスコアを格納
+# save each team score
 for scoreIndex in range(1, 3):
     tempScore = []
     # ビジター
+    # for visitor team
     if scoreIndex == 1:
         metaData['visitorTeam'] = scoreboard[scoreIndex].select('th')[0].text
         for inningScore in scoreboard[scoreIndex].select("td"):
             tempScore.append(inningScore.text)
         metaData[metaData['visitorTeam']] = tempScore
     # ホーム
+    # for home team
     else:
         metaData['homeTeam'] = scoreboard[scoreIndex].select('th')[0].text
         for inningScore in scoreboard[scoreIndex].select("td"):
             tempScore.append(inningScore.text)
         metaData[metaData['homeTeam']] = tempScore
 
-# デバッグ用に表示    
+# デバッグ用に表示
+# print for debug
 print(metaData)
 
 # データ保存用関数
+# data save function
 import bz2
 # dbに格納
+# save to database
 def ptoz(obj):
     return bz2.compress(pickle.dumps(obj, PICKLE_PROTOCOL), 3)
 
 # dbから読み出し
+# read from database
 def ztop(b):
     return pickle.loads(bz2.decompress(b)) 
 
 # DBに接続
+# connect database
 conn = sqlite3.connect(saveDBName)
 c = conn.cursor()
 
-# 挿入用SQL
-# バイナリ化して入れる
+# 挿入用SQL insert SQL
+# バイナリ化して入れる save converted binary data
 insert_sql = "insert into baseballData (id, metaData, gotData) values (?, ?, ?)"
 insert_objs = ballHistory
 newList = []
@@ -184,8 +225,10 @@ newList.append(ptoz(metaData))
 newList.append(ptoz(ballHistory))
 
 # 実行
+# execute
 print(len(pickle.dumps(ballHistory)))
 c.execute(insert_sql, newList)
 conn.commit()
 
 # Closeすべきでは？
+# not close?
