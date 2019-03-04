@@ -3,8 +3,7 @@ import requests
 import re
 import time
 import sqlite3
-import pickle
-PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
+import dbArchiver
 
 
 def fetchData(gameDate, saveDBName):
@@ -199,18 +198,6 @@ def fetchData(gameDate, saveDBName):
     # print for debug
     print(metaData)
 
-    # データ保存用関数
-    # data save function
-    import bz2
-    # dbに格納
-    # save to database
-    def ptoz(obj):
-        return bz2.compress(pickle.dumps(obj, PICKLE_PROTOCOL), 3)
-
-    # dbから読み出し
-    # read from database
-    def ztop(b):
-        return pickle.loads(bz2.decompress(b)) 
 
     # DBに接続
     # connect database
@@ -220,17 +207,18 @@ def fetchData(gameDate, saveDBName):
     # 挿入用SQL insert SQL
     # バイナリ化して入れる save converted binary data
     insert_sql = "insert into baseballData (id, metaData, gotData) values (?, ?, ?)"
-    insert_objs = ballHistory
     newList = []
     newList.append(gameDate)
-    newList.append(ptoz(metaData))
-    newList.append(ptoz(ballHistory))
+    newList.append(dbArchiver.ptoz(metaData))
+    newList.append(dbArchiver.ptoz(ballHistory))
 
     # 実行
     # execute
-    print(len(pickle.dumps(ballHistory)))
+    # print(len(pickle.dumps(ballHistory)))
     c.execute(insert_sql, newList)
     conn.commit()
 
     # Close
     conn.close()
+
+

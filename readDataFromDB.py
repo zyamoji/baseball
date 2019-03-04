@@ -1,32 +1,25 @@
 
 # -*- coding: utf-8 -*-
-import time
-import sqlite3
-import pickle
-PICKLE_PROTOCOL = pickle.HIGHEST_PROTOCOL
+import dbArchiver
+
 # データが保存されているDB
 # sqlite3 database name
 saveDBName = "baseballResult.db"
 
-import bz2
-# dbに格納
-# save to db
-def ptoz(obj):
-    return bz2.compress(pickle.dumps(obj, PICKLE_PROTOCOL), 3)
-
-# DBから読み出し
-# read from db
-def ztop(b):
-    return pickle.loads(bz2.decompress(b)) 
+# 試合日
+# game date
+# format: YYYYMMDDNN
+# N means game number in day. should set 01 to 06
+gameDate = "2019030301" # 試合の日付とその日の何試合目か
 
 # DBに接続
 # connect database
-conn = sqlite3.connect(saveDBName)
+conn = dbArchiver.sqlite3.connect(saveDBName)
 c = conn.cursor()
 
 # 取得用SQL
 # select SQL
-select_sql = 'select * from baseballData where id=2019022403'
+select_sql = f'select * from baseballData where id={gameDate}'
 
 # データ取得
 # 1行分しか無いはず
@@ -34,7 +27,7 @@ select_sql = 'select * from baseballData where id=2019022403'
 for row in c.execute(select_sql):
     # デバッグ用にデータ表示
     # print for debug
-    print(ztop(row[1]))
-    ballHistory = ztop(row[2])
+    print(dbArchiver.ztop(row[1]))
+    ballHistory = dbArchiver.ztop(row[2])
 
 conn.close()
