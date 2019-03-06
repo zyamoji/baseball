@@ -1,10 +1,17 @@
 import getYahooBaseballInfo
+import argparse
+
+# 試合日を引数で受け取る
+# TODO Type Check
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument("gameDate", help="set game date. fomat YYYYMMDDNN NN shoud set from 01 to 06")
+args = arg_parser.parse_args()
 
 # 試合日
 # game date
 # format: YYYYMMDDNN
 # N means game number in day. should set 01 to 06
-gameDate = "2019042406" # 試合の日付とその日の何試合目か
+gameDate = args.gameDate # 試合の日付とその日の何試合目か
 
 # 保存するSQLite DB
 # sqlite3 database name

@@ -139,6 +139,7 @@ def fetchData(gameDate, saveDBName):
         
         # 次へボタンが無ければ終了
         # finish if last page
+        # TODO catch error
         if not isNextButton.has_attr("href"):
             break
 
