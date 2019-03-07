@@ -8,18 +8,18 @@ arg_parser.add_argument("gameDate", help="set game date. fomat YYYYMMDDNN NN sho
 args = arg_parser.parse_args()
 
 # 試合日
-# game date
+# Game date
 # format: YYYYMMDDNN
 # N means game number in day. should set 01 to 06
 gameDate = args.gameDate # 試合の日付とその日の何試合目か
 
 # 保存するSQLite DB
-# sqlite3 database name
+# Sqlite3 database name
 saveDBName = "baseballResult.db"
 
 # TODO
 # parameter check
 
 # データ取得
-# fetch data
+# Fetch data
 getYahooBaseballInfo.fetchData(gameDate, saveDBName)
