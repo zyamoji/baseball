@@ -222,4 +222,4 @@ def fetchData(gameDate, saveDBName):
     # Close
     conn.close()
 
-
+    return ballHistory
